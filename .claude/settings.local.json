@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Expand-Archive -Path beads.zip -DestinationPath . -Force\")",
+      "Bash(dir)",
+      "Bash(./bin/bd.exe version:*)",
+      "Bash(./bin/bd.exe init:*)",
+      "Bash(./bin/bd.exe status:*)"
+    ]
+  }
+}
