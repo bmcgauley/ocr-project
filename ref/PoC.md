@@ -16,6 +16,7 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
 - Produce structured CSV output with confidence scoring
 - Demonstrate graceful handling of edge cases
 - Validate the multi-agent architecture concept
+- Working local web UI for document upload and result viewing
 
 ---
 
@@ -75,6 +76,16 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
 | **Pandas** | CSV manipulation | `pip install pandas` |
 | **JSON** | Structured output | Built-in |
 
+### Frontend & API (All Free)
+
+| Tool | Purpose | Installation | Notes |
+|------|---------|--------------|-------|
+| **Next.js 15** | Frontend framework | `npx create-next-app@latest` | React-based, serverless-ready |
+| **FastAPI** | Python REST API | `pip install fastapi uvicorn` | Async, auto-docs, type hints |
+| **Tailwind CSS** | UI styling | Included with Next.js | Utility-first CSS |
+| **shadcn/ui** | Component library | `npx shadcn-ui@latest init` | Accessible, customizable |
+| **Zustand** | State management | `npm install zustand` | Lightweight React state |
+
 ### Optional: Local Vision Model (If Hardware Permits)
 
 | Model | Size | Hardware Req | Installation |
@@ -89,6 +100,18 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
 ### Minimal Agent System (Not Over-Engineered)
 
 ```
+┌─────────────────────────────────────────────────────────┐
+│                    WEB UI (Next.js 15)                  │
+│  • Document upload  • Status display  • Results viewer  │
+└─────────────────────────────────────────────────────────┘
+                            │
+                            ▼ (REST API)
+┌─────────────────────────────────────────────────────────┐
+│                    FastAPI SERVER                        │
+│         • Upload endpoint  • Status  • Results           │
+└─────────────────────────────────────────────────────────┘
+                            │
+                            ▼
 ┌─────────────────────────────────────────────────────────┐
 │                    MAIN ORCHESTRATOR                    │
 │              (Python script coordinator)                │
@@ -145,6 +168,18 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
 - Generate CSV with confidence scores
 - Create review flags for uncertain extractions
 - Log processing metadata
+
+**Stage 8: API Layer (FastAPI)**
+- REST endpoints for document upload
+- Status checking endpoints
+- Results retrieval endpoints
+- WebSocket for real-time progress updates
+
+**Stage 9: Web UI (Next.js)**
+- Document upload interface with drag-and-drop
+- Processing status dashboard with real-time updates
+- Results viewer with confidence visualization
+- CSV download and review queue management
 
 ---
 
@@ -229,7 +264,46 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
   - Ground truth files created
 - **Estimated Time:** 2 hours
 
-**Daily Goal:** ✅ Fully functional development environment with test data
+**Story 1.4: Frontend & API Setup**
+- **As a** developer
+- **I want** Next.js and FastAPI boilerplate ready
+- **So that** I can build the web UI in parallel with backend
+- **Tasks:**
+  - [ ] Initialize Next.js project: `npx create-next-app@latest frontend --typescript --tailwind --app`
+  - [ ] Install FastAPI and dependencies: `pip install fastapi uvicorn python-multipart`
+  - [ ] Create basic FastAPI server structure:
+    ```
+    src/
+    ├── api/
+    │   ├── main.py              # FastAPI app
+    │   ├── routes/
+    │   │   ├── upload.py        # Document upload
+    │   │   ├── status.py        # Processing status
+    │   │   └── results.py       # Results retrieval
+    │   └── models/
+    │       └── schemas.py       # Pydantic models
+    ```
+  - [ ] Create Next.js app structure:
+    ```
+    frontend/
+    ├── src/
+    │   ├── app/
+    │   │   ├── page.tsx         # Home/upload page
+    │   │   ├── results/
+    │   │   │   └── page.tsx     # Results page
+    │   │   └── layout.tsx       # Root layout
+    │   ├── components/          # Reusable components
+    │   └── lib/                 # Utilities
+    ```
+  - [ ] Test FastAPI server runs: `uvicorn src.api.main:app --reload`
+  - [ ] Test Next.js runs: `npm run dev`
+- **Acceptance Criteria:**
+  - FastAPI server starts on http://localhost:8000
+  - Next.js app runs on http://localhost:3000
+  - Both have basic "Hello World" responses
+- **Estimated Time:** 2 hours
+
+**Daily Goal:** ✅ Fully functional development environment with test data and running frontend/API
 
 ---
 
@@ -515,7 +589,31 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
   - Results comparable to regex/NER
 - **Estimated Time:** 2 hours (if hardware permits)
 
-**Daily Goal:** ✅ Entity extraction working with structured CSV output
+**Story 5.5: FastAPI Endpoints Implementation**
+- **As a** API developer
+- **I want** REST endpoints for document processing
+- **So that** the frontend can interact with the OCR pipeline
+- **Tasks:**
+  - [ ] Implement upload endpoint (`POST /api/upload`)
+    - Accept file upload (multipart/form-data)
+    - Validate file type and size
+    - Return document ID and status
+  - [ ] Implement status endpoint (`GET /api/status/{doc_id}`)
+    - Return processing status (queued/processing/completed/failed)
+    - Return progress percentage
+  - [ ] Implement results endpoint (`GET /api/results/{doc_id}`)
+    - Return extracted data as JSON
+    - Include confidence scores
+    - Include CSV download link
+  - [ ] Add CORS middleware for Next.js frontend
+  - [ ] Write API tests with pytest
+- **Acceptance Criteria:**
+  - All endpoints work and return correct data
+  - CORS allows frontend requests
+  - API auto-docs available at /docs
+- **Estimated Time:** 3 hours
+
+**Daily Goal:** ✅ Entity extraction working with structured CSV output + API endpoints ready
 
 ---
 
@@ -593,7 +691,40 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
   - Summary report shows key metrics
 - **Estimated Time:** 2 hours
 
-**Daily Goal:** ✅ Complete pipeline producing validated CSV output with review flags
+**Story 6.5: Next.js Frontend UI Development**
+- **As a** user
+- **I want** a web interface to upload documents and view results
+- **So that** I can easily interact with the OCR system
+- **Tasks:**
+  - [ ] Create upload page (`app/page.tsx`):
+    - Drag-and-drop file upload component
+    - File preview before processing
+    - Submit button to start OCR
+  - [ ] Create results page (`app/results/[id]/page.tsx`):
+    - Display processing status with progress indicator
+    - Show extracted data in readable format
+    - Display confidence scores with visual indicators (green/yellow/red)
+    - Show review flags and warnings
+    - CSV download button
+  - [ ] Create API client (`lib/api.ts`):
+    - Upload function
+    - Status polling function
+    - Results fetching function
+  - [ ] Add state management with Zustand:
+    - Upload state
+    - Processing status
+    - Results data
+  - [ ] Style with Tailwind CSS and shadcn/ui components
+  - [ ] Add error handling and loading states
+- **Acceptance Criteria:**
+  - Can upload documents via web UI
+  - Processing status updates in real-time
+  - Results display correctly with confidence visualization
+  - CSV downloads work
+  - UI is responsive and user-friendly
+- **Estimated Time:** 4 hours
+
+**Daily Goal:** ✅ Complete pipeline producing validated CSV output + working web UI
 
 ---
 
@@ -604,22 +735,31 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
 
 **User Stories:**
 
-**Story 7.1: End-to-End Pipeline Testing**
+**Story 7.1: End-to-End Pipeline & Frontend Integration Testing**
 - **As a** tester
-- **I want** to run the full pipeline on all test documents
-- **So that** I can verify everything works
+- **I want** to run the full pipeline on all test documents via both CLI and web UI
+- **So that** I can verify everything works end-to-end
 - **Tasks:**
   - [ ] Create main orchestrator script
-  - [ ] Run on all 5 test documents
+  - [ ] Run on all 5 test documents via CLI
+  - [ ] Test full workflow via web UI:
+    - Upload document through UI
+    - Monitor processing status
+    - View results in browser
+    - Download CSV
   - [ ] Compare outputs with ground truth
   - [ ] Calculate accuracy metrics:
     - Character error rate (CER)
     - Word error rate (WER)
     - Entity extraction accuracy
     - Processing time per document
+  - [ ] Test API endpoints with curl/Postman
+  - [ ] Verify CORS and error handling
   - [ ] Document any failures
 - **Acceptance Criteria:**
-  - All documents process successfully
+  - All documents process successfully via CLI
+  - Web UI successfully uploads and displays results
+  - API endpoints work correctly
   - Metrics documented
   - Failure cases understood
 - **Estimated Time:** 3 hours
@@ -681,22 +821,31 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
   - Recommendations actionable
 - **Estimated Time:** 2 hours
 
-**Story 7.5: Demo Preparation**
+**Story 7.5: Demo Preparation (CLI + Web UI)**
 - **As a** presenter
-- **I want** a working demo
-- **So that** I can show the PoC
+- **I want** a working demo via both CLI and web interface
+- **So that** I can showcase the full PoC capabilities
 - **Tasks:**
-  - [ ] Create demo script
+  - [ ] Create demo script for both interfaces
   - [ ] Prepare demo documents (1 easy, 1 hard)
   - [ ] Create before/after visuals
+  - [ ] Record or prepare live demo workflow:
+    - Start FastAPI server
+    - Start Next.js frontend
+    - Upload document via web UI
+    - Show real-time status updates
+    - Display results with confidence scores
+    - Download CSV
   - [ ] Prepare talking points:
-    - What we built
+    - Full-stack architecture (Next.js + FastAPI + OCR pipeline)
+    - What we built in 7 days
     - What we learned
     - Free vs paid trade-offs
-    - Next steps
+    - Next steps (serverless deployment, GitHub Actions, etc.)
 - **Acceptance Criteria:**
-  - Demo runs smoothly
+  - Demo runs smoothly on both CLI and web UI
   - Key points are clear
+  - Web UI demo is impressive and user-friendly
 - **Estimated Time:** 1 hour
 
 **Daily Goal:** ✅ Fully tested PoC with documentation and demo ready
@@ -728,12 +877,55 @@ spacy>=3.6.0
 # Data Handling
 pandas>=2.0.0
 
+# API & Web Server
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6  # For file uploads
+pydantic>=2.5.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+pytest-asyncio>=0.23.0  # For async API tests
+httpx>=0.26.0  # For API testing
+
+# Code Quality
+black>=23.12.0
+ruff>=0.1.11
+mypy>=1.8.0
+
+# Logging
+loguru>=0.7.2
+
 # Utilities
 python-Levenshtein>=0.21.0  # For text comparison
 tqdm>=4.65.0  # Progress bars
 
 # Optional: Local LLM
 # ollama (install separately: https://ollama.ai)
+```
+
+**Frontend Dependencies (package.json):**
+```json
+{
+  "dependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zustand": "^4.5.0",
+    "axios": "^1.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0"
+  }
+}
 ```
 
 ---
@@ -754,11 +946,20 @@ tqdm>=4.65.0  # Progress bars
 
 ### Qualitative Success Indicators
 
+**Backend:**
 - [ ] Preprocessing visibly improves image quality
 - [ ] Ensemble results are better than single-engine
 - [ ] Entity extraction finds key data (dates, names, numbers)
 - [ ] Review flags correctly identify low-quality extractions
 - [ ] System is understandable and maintainable
+
+**Frontend & API:**
+- [ ] Web UI is intuitive and easy to use
+- [ ] File upload works smoothly with drag-and-drop
+- [ ] Processing status updates in real-time
+- [ ] Results display is clear and informative
+- [ ] Confidence visualization helps identify issues
+- [ ] API endpoints are well-documented and functional
 
 ---
 
