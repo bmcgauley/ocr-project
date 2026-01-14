@@ -200,78 +200,59 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
 
 **User Stories:**
 
-**Story 1.1: Development Environment Setup**
+**Story 1.1: Development Environment Setup** ✅ COMPLETED
 - **As a** developer
 - **I want** all dependencies installed and tested
 - **So that** I can build the pipeline without blockers
 - **Tasks:**
-  - [ ] Create virtual environment (`python -m venv venv`)
-  - [ ] Install core dependencies (see requirements.txt below)
-  - [ ] Test each OCR engine with a simple image
-  - [ ] Verify OpenCV and image processing libraries
+  - [x] Create virtual environment (`python -m venv venv`)
+  - [x] Install core dependencies (see requirements.txt below)
+  - [x] Test each OCR engine with a simple image
+  - [x] Verify OpenCV and image processing libraries
 - **Acceptance Criteria:**
-  - All imports work without errors
-  - Sample OCR test produces text output
-- **Estimated Time:** 3 hours
+  - All imports work without errors ✅
+  - Sample OCR test produces text output ✅
+- **Estimated Time:** 3 hours | **Actual:** ~2 hours
 
-**Story 1.2: Project Structure Creation**
+**Story 1.2: Project Structure Creation** ✅ COMPLETED
 - **As a** developer
 - **I want** organized code structure
 - **So that** components are modular and maintainable
 - **Tasks:**
-  - [ ] Create directory structure:
-    ```
-    ocr-project/
-    ├── src/
-    │   ├── agents/
-    │   │   ├── intake.py
-    │   │   ├── preprocessor.py
-    │   │   ├── ocr_engine.py
-    │   │   ├── entity_extractor.py
-    │   │   └── output_formatter.py
-    │   ├── utils/
-    │   │   ├── image_utils.py
-    │   │   └── validation.py
-    │   └── orchestrator.py
-    ├── tests/
-    │   └── sample_documents/
-    ├── output/
-    ├── requirements.txt
-    └── README.md
-    ```
-  - [ ] Create stub files for each module
-  - [ ] Write basic README with setup instructions
+  - [x] Create directory structure (expanded to include API)
+  - [x] Create stub files for each module
+  - [x] Write basic README with setup instructions
 - **Acceptance Criteria:**
-  - Clean project structure exists
-  - All modules can be imported
-- **Estimated Time:** 1 hour
+  - Clean project structure exists ✅
+  - All modules can be imported ✅
+- **Estimated Time:** 1 hour | **Actual:** ~1.5 hours
 
-**Story 1.3: Sample Document Collection**
+**Story 1.3: Sample Document Collection** ✅ COMPLETED (Partial - Ground Truth Deferred)
 - **As a** tester
 - **I want** diverse test documents
 - **So that** I can validate different scenarios
 - **Tasks:**
-  - [ ] Find/create 5 test documents:
+  - [x] Find/create 5 test documents:
     1. Clean printed text
     2. Handwritten note
     3. Mixed content
     4. Degraded/faded document
     5. Rotated text
-  - [ ] Organize in `tests/sample_documents/`
-  - [ ] Create ground truth text files for validation
+  - [x] Organize in `tests/sample_documents/`
+  - [ ] ~~Create ground truth text files for validation~~ → **MOVED to Story 4.4**
 - **Acceptance Criteria:**
-  - 5 test documents ready
-  - Ground truth files created
-- **Estimated Time:** 2 hours
+  - 5 test documents ready ✅
+  - Ground truth files created → **Deferred to Day 4**
+- **Estimated Time:** 2 hours | **Actual:** ~1 hour
 
-**Story 1.4: Frontend & API Setup**
+**Story 1.4: Frontend & API Setup** ✅ COMPLETED (Partial - Next.js Deferred)
 - **As a** developer
 - **I want** Next.js and FastAPI boilerplate ready
 - **So that** I can build the web UI in parallel with backend
 - **Tasks:**
-  - [ ] Initialize Next.js project: `npx create-next-app@latest frontend --typescript --tailwind --app`
-  - [ ] Install FastAPI and dependencies: `pip install fastapi uvicorn python-multipart`
-  - [ ] Create basic FastAPI server structure:
+  - [ ] ~~Initialize Next.js project~~ → **MOVED to Story 6.5**
+  - [x] Install FastAPI and dependencies: `pip install fastapi uvicorn python-multipart`
+  - [x] Create basic FastAPI server structure:
     ```
     src/
     ├── api/
@@ -283,27 +264,21 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
     │   └── models/
     │       └── schemas.py       # Pydantic models
     ```
-  - [ ] Create Next.js app structure:
-    ```
-    frontend/
-    ├── src/
-    │   ├── app/
-    │   │   ├── page.tsx         # Home/upload page
-    │   │   ├── results/
-    │   │   │   └── page.tsx     # Results page
-    │   │   └── layout.tsx       # Root layout
-    │   ├── components/          # Reusable components
-    │   └── lib/                 # Utilities
-    ```
-  - [ ] Test FastAPI server runs: `uvicorn src.api.main:app --reload`
-  - [ ] Test Next.js runs: `npm run dev`
+  - [ ] ~~Create Next.js app structure~~ → **MOVED to Story 6.5**
+  - [ ] ~~Test FastAPI server runs~~ → **MOVED to Story 5.5**
+  - [ ] ~~Test Next.js runs~~ → **MOVED to Story 6.5**
 - **Acceptance Criteria:**
-  - FastAPI server starts on http://localhost:8000
-  - Next.js app runs on http://localhost:3000
-  - Both have basic "Hello World" responses
-- **Estimated Time:** 2 hours
+  - FastAPI server structure created ✅
+  - Next.js initialization → **Deferred to Day 6**
+- **Estimated Time:** 2 hours | **Actual:** ~1 hour (FastAPI only)
 
-**Daily Goal:** ✅ Fully functional development environment with test data and running frontend/API
+**Daily Goal:** ✅ COMPLETED (with strategic deferrals)
+- ✅ Development environment fully functional
+- ✅ Project structure created
+- ✅ Sample documents collected and organized
+- ✅ FastAPI structure created
+- ⏭️ Ground truth files deferred to Day 4 (will create when testing baseline)
+- ⏭️ Next.js setup deferred to Day 6 (better integrated with frontend development)
 
 ---
 
@@ -500,19 +475,21 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
   - Always produces some output
 - **Estimated Time:** 2 hours
 
-**Story 4.4: Baseline Testing**
+**Story 4.4: Baseline Testing & Ground Truth Validation**
 - **As a** tester
 - **I want** to measure accuracy vs ground truth
 - **So that** I know how well the system works
 - **Tasks:**
+  - [ ] **Create ground truth text files for all 5 sample documents** ← *Deferred from Day 1*
   - [ ] Implement accuracy calculation (character error rate)
   - [ ] Compare against ground truth files
   - [ ] Create accuracy report per document
   - [ ] Identify which engine works best for each type
 - **Acceptance Criteria:**
+  - Ground truth files created for all test documents ✅
   - Accuracy metrics calculated
   - Report generated
-- **Estimated Time:** 1 hour
+- **Estimated Time:** 2 hours (added 1hr for ground truth creation)
 
 **Daily Goal:** ✅ Ensemble system that combines OCR outputs intelligently with confidence scoring
 
@@ -594,6 +571,7 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
 - **I want** REST endpoints for document processing
 - **So that** the frontend can interact with the OCR pipeline
 - **Tasks:**
+  - [ ] **Test FastAPI server runs:** `uvicorn src.api.main:app --reload` ← *Deferred from Day 1*
   - [ ] Implement upload endpoint (`POST /api/upload`)
     - Accept file upload (multipart/form-data)
     - Validate file type and size
@@ -608,6 +586,7 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
   - [ ] Add CORS middleware for Next.js frontend
   - [ ] Write API tests with pytest
 - **Acceptance Criteria:**
+  - FastAPI server starts successfully on http://localhost:8000 ✅
   - All endpoints work and return correct data
   - CORS allows frontend requests
   - API auto-docs available at /docs
@@ -696,6 +675,20 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
 - **I want** a web interface to upload documents and view results
 - **So that** I can easily interact with the OCR system
 - **Tasks:**
+  - [ ] **Initialize Next.js project:** `npx create-next-app@latest frontend --typescript --tailwind --app` ← *Deferred from Day 1*
+  - [ ] **Create Next.js app structure:** ← *Deferred from Day 1*
+    ```
+    frontend/
+    ├── src/
+    │   ├── app/
+    │   │   ├── page.tsx         # Home/upload page
+    │   │   ├── results/
+    │   │   │   └── page.tsx     # Results page
+    │   │   └── layout.tsx       # Root layout
+    │   ├── components/          # Reusable components
+    │   └── lib/                 # Utilities
+    ```
+  - [ ] **Test Next.js runs:** `npm run dev` ← *Deferred from Day 1*
   - [ ] Create upload page (`app/page.tsx`):
     - Drag-and-drop file upload component
     - File preview before processing
@@ -717,12 +710,13 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
   - [ ] Style with Tailwind CSS and shadcn/ui components
   - [ ] Add error handling and loading states
 - **Acceptance Criteria:**
+  - Next.js app initializes and runs on http://localhost:3000 ✅
   - Can upload documents via web UI
   - Processing status updates in real-time
   - Results display correctly with confidence visualization
   - CSV downloads work
   - UI is responsive and user-friendly
-- **Estimated Time:** 4 hours
+- **Estimated Time:** 5 hours (added 1hr for initialization from Day 1)
 
 **Daily Goal:** ✅ Complete pipeline producing validated CSV output + working web UI
 
