@@ -289,21 +289,21 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
 
 **User Stories:**
 
-**Story 2.1: Image Loading & Quality Assessment**
+**Story 2.1: Image Loading & Quality Assessment** ✅ COMPLETED
 - **As a** preprocessor
 - **I want** to load and assess image quality
 - **So that** I can decide preprocessing strategy
 - **Tasks:**
-  - [ ] Implement `image_utils.py`:
+  - [x] Implement `image_utils.py`:
     - Load image (handle multiple formats)
     - Check resolution
     - Assess quality (blur detection, contrast check)
-  - [ ] Create quality scoring function (0-10 scale)
-  - [ ] Test with sample documents
+  - [x] Create quality scoring function (0-10 scale)
+  - [x] Test with sample documents
 - **Acceptance Criteria:**
-  - All test images load successfully
-  - Quality scores seem reasonable
-- **Estimated Time:** 2 hours
+  - All test images load successfully ✅
+  - Quality scores seem reasonable ✅
+- **Estimated Time:** 2 hours | **Actual:** ~2.5 hours
 
 **Story 2.2: Preprocessing Operations**
 - **As a** preprocessor
