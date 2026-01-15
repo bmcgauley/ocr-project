@@ -305,23 +305,23 @@ This document outlines a **minimal viable PoC** using **100% free and open-sourc
   - Quality scores seem reasonable ✅
 - **Estimated Time:** 2 hours | **Actual:** ~2.5 hours
 
-**Story 2.2: Preprocessing Operations**
+**Story 2.2: Preprocessing Operations** ✅ COMPLETED
 - **As a** preprocessor
 - **I want** image enhancement functions
 - **So that** OCR engines get optimal input
 - **Tasks:**
-  - [ ] Implement in `preprocessor.py`:
+  - [x] Implement in `preprocessor.py`:
     - Grayscale conversion
     - Deskewing (Hough transform + rotation)
     - Contrast enhancement (CLAHE)
     - Noise removal (bilateral filter)
     - Binarization (adaptive thresholding)
-  - [ ] Create before/after visualization function
-  - [ ] Test each operation individually
+  - [x] Create before/after visualization function
+  - [x] Test each operation individually
 - **Acceptance Criteria:**
-  - Each preprocessing step works
-  - Visual improvements visible
-- **Estimated Time:** 4 hours
+  - Each preprocessing step works ✅
+  - Visual improvements visible ✅
+- **Estimated Time:** 4 hours | **Actual:** ~3 hours
 
 **Story 2.3: Preprocessing Pipeline Integration**
 - **As a** system
