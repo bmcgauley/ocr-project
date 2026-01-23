@@ -4,14 +4,12 @@ Handles multiple OCR engines and result aggregation.
 """
 
 import time
-from pathlib import Path
 
-import cv2
 import numpy as np
 import pytesseract  # type: ignore[import-untyped]
 from dataclasses import dataclass, field
 from pytesseract import Output  # type: ignore[import-untyped]
-from typing import List, Tuple, Optional, Dict, Any
+from typing import List, Tuple, Dict, Any
 
 
 @dataclass
@@ -76,9 +74,7 @@ def run_tesseract(
         config = f"--oem 3 --psm {psm_mode}"
 
         # Extract detailed data with confidence scores
-        data = pytesseract.image_to_data(
-            image, output_type=Output.DICT, config=config
-        )
+        data = pytesseract.image_to_data(image, output_type=Output.DICT, config=config)
 
         # Extract full text for final output
         full_text = pytesseract.image_to_string(image, config=config)
@@ -137,9 +133,7 @@ def run_tesseract(
                 )
 
         # Calculate overall confidence
-        overall_confidence = (
-            sum(confidences) / len(confidences) if confidences else 0.0
-        )
+        overall_confidence = sum(confidences) / len(confidences) if confidences else 0.0
 
         processing_time = time.time() - start_time
 

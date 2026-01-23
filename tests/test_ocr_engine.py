@@ -119,9 +119,7 @@ class TestRunTesseract:
     def test_run_tesseract_min_confidence_filter(self, sample_image):
         """Test that min_confidence threshold filters results."""
         # Run with very high threshold
-        text, conf_high, meta_high = run_tesseract(
-            sample_image, min_confidence=90
-        )
+        text, conf_high, meta_high = run_tesseract(sample_image, min_confidence=90)
 
         # Run with low threshold
         text, conf_low, meta_low = run_tesseract(sample_image, min_confidence=30)
