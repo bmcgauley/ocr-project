@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 import pytest
 
-from src.agents.ocr_engine import OCRResult, run_tesseract
+from src.agents.ocr_engine import OCRResult, run_tesseract, run_paddleocr
 
 
 # Check if Tesseract is installed
@@ -22,11 +22,27 @@ def is_tesseract_installed():
         return False
 
 
-# Skip marker for tests requiring Tesseract
+# Check if PaddleOCR is installed
+def is_paddleocr_installed():
+    """Check if PaddleOCR is available."""
+    try:
+        import paddleocr  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+# Skip markers
 requires_tesseract = pytest.mark.skipif(
     not is_tesseract_installed(),
     reason="Tesseract binary not installed. Install from: "
     "https://github.com/UB-Mannheim/tesseract/wiki",
+)
+
+requires_paddleocr = pytest.mark.skipif(
+    not is_paddleocr_installed(),
+    reason="PaddleOCR not installed. Install with: pip install paddleocr paddlepaddle",
 )
 
 
@@ -237,6 +253,140 @@ class TestRunTesseract:
         assert isinstance(text, str)
         assert isinstance(confidence, float)
         assert 0.0 <= confidence <= 100.0
+
+
+class TestRunPaddleOCR:
+    """Test suite for PaddleOCR engine."""
+
+    @pytest.fixture
+    def sample_image(self):
+        """Create a simple test image with text."""
+        # Create white background
+        img = np.ones((200, 600, 3), dtype=np.uint8) * 255
+
+        # Add some text
+        cv2.putText(
+            img,
+            "PaddleOCR Test",
+            (50, 100),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            2,
+            (0, 0, 0),
+            3,
+        )
+
+        return img
+
+    @requires_paddleocr
+    def test_run_paddleocr_success(self, sample_image):
+        """Test PaddleOCR runs successfully on valid image."""
+        text, confidence, metadata = run_paddleocr(sample_image)
+
+        # Verify text extraction
+        assert text is not None
+        assert isinstance(text, str)
+
+        # Verify confidence score
+        assert isinstance(confidence, float)
+        assert 0.0 <= confidence <= 1.0
+
+        # Verify metadata structure
+        assert "block_count" in metadata
+        assert "blocks" in metadata
+        assert "use_angle_cls" in metadata
+        assert "language" in metadata
+        assert "processing_time" in metadata
+
+    def test_run_paddleocr_invalid_input_none(self):
+        """Test PaddleOCR handles None input."""
+        with pytest.raises(ValueError, match="Image cannot be None or empty"):
+            run_paddleocr(None)
+
+    def test_run_paddleocr_invalid_input_empty(self):
+        """Test PaddleOCR handles empty array."""
+        empty_img = np.array([])
+        with pytest.raises(ValueError, match="Image cannot be None or empty"):
+            run_paddleocr(empty_img)
+
+    @requires_paddleocr
+    def test_run_paddleocr_with_angle_detection(self, sample_image):
+        """Test PaddleOCR with angle classification enabled."""
+        text, confidence, metadata = run_paddleocr(sample_image, use_angle_cls=True)
+
+        assert isinstance(text, str)
+        assert isinstance(confidence, float)
+        assert metadata["use_angle_cls"] is True
+
+    @requires_paddleocr
+    def test_run_paddleocr_confidence_filtering(self, sample_image):
+        """Test confidence threshold filtering."""
+        # High threshold
+        text_high, conf_high, meta_high = run_paddleocr(
+            sample_image, min_confidence=0.9
+        )
+
+        # Low threshold
+        text_low, conf_low, meta_low = run_paddleocr(sample_image, min_confidence=0.3)
+
+        # Low threshold should capture same or more blocks
+        assert meta_low["block_count"] >= meta_high["block_count"]
+
+    @requires_paddleocr
+    def test_run_paddleocr_confidence_range(self, sample_image):
+        """Test confidence scores are in valid range."""
+        text, confidence, metadata = run_paddleocr(sample_image)
+
+        # Overall confidence
+        assert 0.0 <= confidence <= 1.0
+
+        # Block-level confidences
+        for block in metadata["blocks"]:
+            assert 0.0 <= block["confidence"] <= 1.0
+
+    @requires_paddleocr
+    def test_run_paddleocr_block_metadata_structure(self, sample_image):
+        """Test block metadata has correct structure."""
+        text, confidence, metadata = run_paddleocr(sample_image)
+
+        if metadata["blocks"]:  # If blocks were detected
+            block = metadata["blocks"][0]
+
+            # Check required fields
+            assert "text" in block
+            assert "confidence" in block
+            assert "box" in block
+
+            # Check box structure (PaddleOCR uses 4-point polygon)
+            assert "top_left" in block["box"]
+            assert "top_right" in block["box"]
+            assert "bottom_right" in block["box"]
+            assert "bottom_left" in block["box"]
+
+    @requires_paddleocr
+    def test_run_paddleocr_processing_time(self, sample_image):
+        """Test that processing time is recorded."""
+        start = time.time()
+        text, confidence, metadata = run_paddleocr(sample_image)
+        elapsed = time.time() - start
+
+        # Processing time should be recorded and reasonable
+        assert "processing_time" in metadata
+        assert metadata["processing_time"] > 0
+        assert metadata["processing_time"] <= elapsed + 0.5
+
+    @requires_paddleocr
+    def test_run_paddleocr_blank_image(self):
+        """Test PaddleOCR handles blank/white image."""
+        # Create completely white image
+        blank = np.ones((500, 500, 3), dtype=np.uint8) * 255
+
+        # Should not crash
+        text, confidence, metadata = run_paddleocr(blank)
+
+        # May have no text or very low confidence
+        assert isinstance(text, str)
+        assert isinstance(confidence, float)
+        assert 0.0 <= confidence <= 1.0
 
 
 class TestOCRResult:

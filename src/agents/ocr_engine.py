@@ -154,17 +154,114 @@ def run_tesseract(
         raise RuntimeError(f"Tesseract OCR failed: {str(e)}") from e
 
 
-def run_paddleocr(image: np.ndarray) -> Tuple[str, float, Dict[str, Any]]:
-    """Run PaddleOCR.
+def run_paddleocr(
+    image: np.ndarray,
+    use_angle_cls: bool = True,
+    min_confidence: float = 0.5,
+    lang: str = "en",
+) -> Tuple[str, float, Dict[str, Any]]:
+    """Run PaddleOCR with angle detection and confidence extraction.
 
     Args:
-        image: Input image
+        image: Input image (numpy array)
+        use_angle_cls: Enable angle classification for rotated text (default: True)
+        min_confidence: Minimum confidence threshold for filtering (0.0-1.0)
+        lang: Language code (default: "en" for English)
 
     Returns:
-        Tuple of (text, confidence, metadata)
+        Tuple of (text, average_confidence, metadata)
+        metadata contains detected text blocks, angles, and bounding boxes
+
+    Raises:
+        ValueError: If image is None or empty
+        RuntimeError: If PaddleOCR fails to process image
+
+    Example:
+        >>> img = cv2.imread("document.jpg")
+        >>> text, conf, meta = run_paddleocr(img, use_angle_cls=True)
+        >>> print(f"Confidence: {conf:.2f}")
     """
-    # TODO: Implement PaddleOCR integration (Story 3.2)
-    raise NotImplementedError("PaddleOCR integration not yet implemented")
+    if image is None or image.size == 0:
+        raise ValueError("Image cannot be None or empty")
+
+    start_time = time.time()
+
+    try:
+        # Import here to avoid loading if not used
+        from paddleocr import PaddleOCR  # type: ignore[import-untyped]
+
+        # Initialize PaddleOCR with configuration
+        # use_textline_orientation: Enables detection and correction of rotated text
+        # lang: Language model to use
+        # show_log: Suppress verbose logging
+        # device: Use CPU for compatibility
+        ocr = PaddleOCR(
+            use_textline_orientation=use_angle_cls,
+            lang=lang,
+            show_log=False,
+            device="cpu",  # CPU mode for compatibility
+        )
+
+        # Run OCR on image
+        # PaddleOCR expects BGR image (OpenCV format)
+        result = ocr.ocr(image, cls=use_angle_cls)
+
+        # Parse results
+        text_blocks = []
+        confidences = []
+        full_text_parts = []
+
+        if result and result[0]:
+            for line in result[0]:
+                # Each line: [box_coordinates, (text, confidence)]
+                box = line[0]  # [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]
+                text_info = line[1]
+                text = text_info[0]
+                confidence = float(text_info[1])
+
+                # Filter by confidence threshold
+                if confidence >= min_confidence:
+                    text_blocks.append(
+                        {
+                            "text": text,
+                            "confidence": confidence,
+                            "box": {
+                                "top_left": box[0],
+                                "top_right": box[1],
+                                "bottom_right": box[2],
+                                "bottom_left": box[3],
+                            },
+                        }
+                    )
+                    confidences.append(confidence)
+                    full_text_parts.append(text)
+
+        # Calculate overall confidence
+        overall_confidence = sum(confidences) / len(confidences) if confidences else 0.0
+
+        # Build full text (join with spaces)
+        full_text = " ".join(full_text_parts)
+
+        processing_time = time.time() - start_time
+
+        # Build metadata
+        metadata = {
+            "block_count": len(text_blocks),
+            "blocks": text_blocks,
+            "use_angle_cls": use_angle_cls,
+            "language": lang,
+            "min_confidence_threshold": min_confidence,
+            "processing_time": processing_time,
+        }
+
+        return full_text, overall_confidence, metadata
+
+    except ImportError as e:
+        raise RuntimeError(
+            "PaddleOCR not installed. Install with: pip install paddleocr paddlepaddle"
+        ) from e
+    except Exception as e:
+        raise RuntimeError(f"PaddleOCR failed: {str(e)}") from e
 
 
 def run_easyocr(image: np.ndarray) -> Tuple[str, float, Dict[str, Any]]:
