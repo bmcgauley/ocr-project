@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 import pytest
 
-from src.agents.ocr_engine import OCRResult, run_tesseract, run_paddleocr
+from src.agents.ocr_engine import OCRResult, run_tesseract, run_paddleocr, run_easyocr
 
 
 # Check if Tesseract is installed
@@ -33,6 +33,17 @@ def is_paddleocr_installed():
         return False
 
 
+# Check if EasyOCR is installed
+def is_easyocr_installed():
+    """Check if EasyOCR is available."""
+    try:
+        import easyocr  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 # Skip markers
 requires_tesseract = pytest.mark.skipif(
     not is_tesseract_installed(),
@@ -43,6 +54,11 @@ requires_tesseract = pytest.mark.skipif(
 requires_paddleocr = pytest.mark.skipif(
     not is_paddleocr_installed(),
     reason="PaddleOCR not installed. Install with: pip install paddleocr paddlepaddle",
+)
+
+requires_easyocr = pytest.mark.skipif(
+    not is_easyocr_installed(),
+    reason="EasyOCR not installed. Install with: pip install easyocr",
 )
 
 
@@ -382,6 +398,138 @@ class TestRunPaddleOCR:
 
         # Should not crash
         text, confidence, metadata = run_paddleocr(blank)
+
+        # May have no text or very low confidence
+        assert isinstance(text, str)
+        assert isinstance(confidence, float)
+        assert 0.0 <= confidence <= 1.0
+
+
+class TestRunEasyOCR:
+    """Test suite for EasyOCR engine."""
+
+    @pytest.fixture
+    def sample_image(self):
+        """Create a simple test image with text."""
+        # Create white background
+        img = np.ones((200, 600, 3), dtype=np.uint8) * 255
+
+        # Add some text
+        cv2.putText(
+            img,
+            "EasyOCR Test",
+            (50, 100),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            2,
+            (0, 0, 0),
+            3,
+        )
+
+        return img
+
+    @requires_easyocr
+    def test_run_easyocr_success(self, sample_image):
+        """Test EasyOCR runs successfully on valid image."""
+        text, confidence, metadata = run_easyocr(sample_image)
+
+        # Verify text extraction
+        assert text is not None
+        assert isinstance(text, str)
+
+        # Verify confidence score
+        assert isinstance(confidence, float)
+        assert 0.0 <= confidence <= 1.0
+
+        # Verify metadata structure
+        assert "block_count" in metadata
+        assert "blocks" in metadata
+        assert "languages" in metadata
+        assert "use_gpu" in metadata
+        assert "processing_time" in metadata
+
+    def test_run_easyocr_invalid_input_none(self):
+        """Test EasyOCR handles None input."""
+        with pytest.raises(ValueError, match="Image cannot be None or empty"):
+            run_easyocr(None)
+
+    def test_run_easyocr_invalid_input_empty(self):
+        """Test EasyOCR handles empty array."""
+        empty_img = np.array([])
+        with pytest.raises(ValueError, match="Image cannot be None or empty"):
+            run_easyocr(empty_img)
+
+    @requires_easyocr
+    def test_run_easyocr_multiple_languages(self, sample_image):
+        """Test EasyOCR with multiple language support."""
+        text, confidence, metadata = run_easyocr(sample_image, languages=["en"])
+
+        assert isinstance(text, str)
+        assert isinstance(confidence, float)
+        assert metadata["languages"] == ["en"]
+
+    @requires_easyocr
+    def test_run_easyocr_confidence_filtering(self, sample_image):
+        """Test confidence threshold filtering."""
+        # High threshold
+        text_high, conf_high, meta_high = run_easyocr(sample_image, min_confidence=0.9)
+
+        # Low threshold
+        text_low, conf_low, meta_low = run_easyocr(sample_image, min_confidence=0.3)
+
+        # Low threshold should capture same or more blocks
+        assert meta_low["block_count"] >= meta_high["block_count"]
+
+    @requires_easyocr
+    def test_run_easyocr_confidence_range(self, sample_image):
+        """Test confidence scores are in valid range."""
+        text, confidence, metadata = run_easyocr(sample_image)
+
+        # Overall confidence
+        assert 0.0 <= confidence <= 1.0
+
+        # Block-level confidences
+        for block in metadata["blocks"]:
+            assert 0.0 <= block["confidence"] <= 1.0
+
+    @requires_easyocr
+    def test_run_easyocr_block_metadata_structure(self, sample_image):
+        """Test block metadata has correct structure."""
+        text, confidence, metadata = run_easyocr(sample_image)
+
+        if metadata["blocks"]:  # If blocks were detected
+            block = metadata["blocks"][0]
+
+            # Check required fields
+            assert "text" in block
+            assert "confidence" in block
+            assert "box" in block
+
+            # Check box structure (4-point polygon)
+            assert "top_left" in block["box"]
+            assert "top_right" in block["box"]
+            assert "bottom_right" in block["box"]
+            assert "bottom_left" in block["box"]
+
+    @requires_easyocr
+    def test_run_easyocr_processing_time(self, sample_image):
+        """Test that processing time is recorded."""
+        start = time.time()
+        text, confidence, metadata = run_easyocr(sample_image)
+        elapsed = time.time() - start
+
+        # Processing time should be recorded and reasonable
+        assert "processing_time" in metadata
+        assert metadata["processing_time"] > 0
+        assert metadata["processing_time"] <= elapsed + 1.0
+
+    @requires_easyocr
+    def test_run_easyocr_blank_image(self):
+        """Test EasyOCR handles blank/white image."""
+        # Create completely white image
+        blank = np.ones((500, 500, 3), dtype=np.uint8) * 255
+
+        # Should not crash
+        text, confidence, metadata = run_easyocr(blank)
 
         # May have no text or very low confidence
         assert isinstance(text, str)

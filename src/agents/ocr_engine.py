@@ -264,17 +264,114 @@ def run_paddleocr(
         raise RuntimeError(f"PaddleOCR failed: {str(e)}") from e
 
 
-def run_easyocr(image: np.ndarray) -> Tuple[str, float, Dict[str, Any]]:
-    """Run EasyOCR.
+def run_easyocr(
+    image: np.ndarray,
+    languages: list[str] = ["en"],
+    min_confidence: float = 0.5,
+    use_gpu: bool = False,
+) -> Tuple[str, float, Dict[str, Any]]:
+    """Run EasyOCR with confidence extraction.
 
     Args:
-        image: Input image
+        image: Input image (numpy array)
+        languages: List of language codes (default: ["en"])
+        min_confidence: Minimum confidence threshold for filtering (0.0-1.0)
+        use_gpu: Enable GPU acceleration (default: False for compatibility)
 
     Returns:
-        Tuple of (text, confidence, metadata)
+        Tuple of (text, average_confidence, metadata)
+        metadata contains detected blocks with bounding boxes and confidence
+
+    Raises:
+        ValueError: If image is None or empty
+        RuntimeError: If EasyOCR fails to process image
+
+    Example:
+        >>> img = cv2.imread("document.jpg")
+        >>> text, conf, meta = run_easyocr(img, languages=["en"])
+        >>> print(f"Confidence: {conf:.2f}")
+
+    Note:
+        EasyOCR excels at:
+        - Handwritten text
+        - Scene text in natural images
+        - Mixed language documents
+        Use as fallback when Tesseract/PaddleOCR have low confidence.
     """
-    # TODO: Implement EasyOCR integration (Story 3.3)
-    raise NotImplementedError("EasyOCR integration not yet implemented")
+    if image is None or image.size == 0:
+        raise ValueError("Image cannot be None or empty")
+
+    start_time = time.time()
+
+    try:
+        # Import here to avoid loading if not used
+        import easyocr  # type: ignore[import-untyped]
+
+        # Initialize EasyOCR reader
+        # Note: Reader initialization is expensive, consider caching in production
+        reader = easyocr.Reader(
+            languages,
+            gpu=use_gpu,
+            quantize=not use_gpu,  # Dynamic quantization for CPU performance
+        )
+
+        # Run OCR on image
+        # Returns list of [bbox, text, confidence]
+        result = reader.readtext(image)
+
+        # Parse results
+        text_blocks = []
+        confidences = []
+        full_text_parts = []
+
+        for detection in result:
+            bbox = detection[0]  # [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]
+            text = detection[1]
+            confidence = float(detection[2])
+
+            # Filter by confidence threshold
+            if confidence >= min_confidence:
+                text_blocks.append(
+                    {
+                        "text": text,
+                        "confidence": confidence,
+                        "box": {
+                            "top_left": bbox[0],
+                            "top_right": bbox[1],
+                            "bottom_right": bbox[2],
+                            "bottom_left": bbox[3],
+                        },
+                    }
+                )
+                confidences.append(confidence)
+                full_text_parts.append(text)
+
+        # Calculate overall confidence
+        overall_confidence = sum(confidences) / len(confidences) if confidences else 0.0
+
+        # Build full text (join with spaces)
+        full_text = " ".join(full_text_parts)
+
+        processing_time = time.time() - start_time
+
+        # Build metadata
+        metadata = {
+            "block_count": len(text_blocks),
+            "blocks": text_blocks,
+            "languages": languages,
+            "use_gpu": use_gpu,
+            "min_confidence_threshold": min_confidence,
+            "processing_time": processing_time,
+        }
+
+        return full_text, overall_confidence, metadata
+
+    except ImportError as e:
+        raise RuntimeError(
+            "EasyOCR not installed. Install with: pip install easyocr"
+        ) from e
+    except Exception as e:
+        raise RuntimeError(f"EasyOCR failed: {str(e)}") from e
 
 
 def ensemble_results(results: List[OCRResult]) -> OCRResult:
