@@ -198,7 +198,6 @@ def run_paddleocr(
         ocr = PaddleOCR(
             use_textline_orientation=use_angle_cls,
             lang=lang,
-            show_log=False,
             device="cpu",  # CPU mode for compatibility
         )
 
